@@ -1,8 +1,63 @@
 'use strict';
 
+function loadAllItems() {
+    return [
+        {
+            barcode: 'ITEM000000',
+            name: '可口可乐',
+            unit: '瓶',
+            price: 3.00
+        },
+        {
+            barcode: 'ITEM000001',
+            name: '雪碧',
+            unit: '瓶',
+            price: 3.00
+        },
+        {
+            barcode: 'ITEM000002',
+            name: '苹果',
+            unit: '斤',
+            price: 5.50
+        },
+        {
+            barcode: 'ITEM000003',
+            name: '荔枝',
+            unit: '斤',
+            price: 15.00
+        },
+        {
+            barcode: 'ITEM000004',
+            name: '电池',
+            unit: '个',
+            price: 2.00
+        },
+        {
+            barcode: 'ITEM000005',
+            name: '方便面',
+            unit: '袋',
+            price: 4.50
+        }
+    ];
+}
+
+function loadPromotions() {
+    return [
+        {
+            type: 'BUY_TWO_GET_ONE_FREE',
+            barcodes: [
+                'ITEM000000',
+                'ITEM000001',
+                'ITEM000005'
+            ]
+        }
+    ];
+}
+
 
 function formatTags(tags) {
-    let formatedTags = tags.map(function (tag) {
+    let formatedTags = [];
+    formatedTags = tags.map(function (tag) {
         let arr = tag.split("-");
         return {
             barcode: arr[0],
@@ -13,111 +68,95 @@ function formatTags(tags) {
 }
 
 function mergeBarcodes(formatedTags) {
-    let mergedBarcodes = formatedTags.reduce(function (cur, newArr) {
-        let existBarcodes = cur.find(function (item) {
+    let mergedBarcodes = [];
+    mergedBarcodes = formatedTags.reduce(function (cur, newArr) {
+        let exist = cur.find(function (item) {
             return item.barcode === newArr.barcode;
         });
-        if (!existBarcodes) {
-            existBarcodes = Object.assign({}, newArr, {count: 0});
-            cur.push(existBarcodes);
+        if (!exist) {
+            exist = Object.assign({}, newArr, {count: 0});
+            cur.push(exist);
         }
-        existBarcodes.count += newArr.count;
+        exist.count += newArr.count;
         return cur;
     }, []);
+
     return mergedBarcodes;
 }
 
-function getItems(countedBarcodes, allItems) {
+function getItems(mergedBarcodes, allItems) {
     let cartItems = [];
-    for (let i = 0; i < countedBarcodes.length; i++) {
-        for (let j = 0; j < allItems.length; j++) {
-            if (countedBarcodes[i].barcode === allItems[j].barcode) {
-                cartItems.push(Object.assign({}, allItems[j], {count: countedBarcodes[i].count}));
-            }
+    for (let i = 0; i < allItems.length; i++) {
+        let exist = mergedBarcodes.find(function (item) {
+            return item.barcode === allItems[i].barcode;
+        });
+        if (exist) {
+            cartItems.push(Object.assign({}, allItems[i], {count: exist.count}));
         }
     }
     return cartItems;
 }
 
-function getSubtotal(cartItems) {
-    let subtotaledItems = [];
-    for (let i = 0; i < cartItems.length; i++) {
-        let subtotal = cartItems[i].price * cartItems[i].count;
-        subtotaledItems.push(Object.assign({}, cartItems[i], {subtotal: subtotal}));
-    }
+function getPromontionType(cartItems) {
+    let proInfo = loadPromotions();
+    let proInfoItems = [];
+    for (let i = 0; i < proInfo[0].barcodes.length; i++) {
+        for (let j = 0; j < cartItems.length; j++) {
+            if (cartItems[j].barcode === proInfo[0].barcodes[i]) {
+                proInfoItems.push(Object.assign({}, cartItems[j], {proType: "BUY_TWO_GET_ONE_FREE"}));
+            }
+            else {
+                proInfoItems.push(Object.assign({}, cartItems[j], {proType: "other"}));
+            }
+        }
 
-    return subtotaledItems;
+
+        return proInfoItems;
+    }
 }
 
-function getSavedSubtotal(promotionedBarcodes, cartItems) {
-    let savedSubtotalItems = [];
-    /*for (let i=0; i < promotionedBarcodes.length; i++) {
-     for(let j=0;j<cartItems.length;j++ ){
-     if(promotionedBarcodes.barcode[i]===cartItems[j].barcode && cartItems[j].count/3!==0){
-     savedSubtotalItems.push(Object.assign({},cartItems[j],{savedSubtotal:cartItems[j].price*(cartItems[j].count-cartItems[j].count/3)}));
-     }
-     else {
-     savedSubtotalItems.push(Object.assign({},cartItems[j],{savedSubtotal:cartItems[j].price*cartItems[j].count}));
+function getSavedSubtotal(proInfoItems) {
+    let savedSubItems = [];
 
-     }
-     }*/
-  /*  for(let i=0;i<promotionedBarcodes[0].barcodes.length;i++){
-     for(let j=0;j<cartItems.length;j++){
-     let existPromotion=cartItems.find(function (item) {
-     return (item.barcode===promotionedBarcodes[0].barcodes[i]&& item.count/3!==0);
-     });
-
-     if(existPromotion){
-     savedSubtotalItems.push(Object.assign({},cartItems[j],{savedSubtotal:cartItems[j].price*(cartItems[j].count-cartItems[j].count/3)}));
-     }
-     else {
-     savedSubtotalItems.push(Object.assign({},cartItems[j],{savedSubtotal:cartItems[j].price*cartItems[j].count}));
-     }
-     }
-     }*/
-    for (let j = 0; j <cartItems.length ; j++) {
-        let existPromotion=cartItems[j].barcode===promotionedBarcodes[0].barcodes[j]&& cartItems[j].count/3!==0;
-       
-        if(existPromotion){
-            savedSubtotalItems.push(Object.assign({},cartItems[j],{savedSubtotal:cartItems[j].price*(cartItems[j].count-cartItems[j].count/3)}));
+    for (let i = 0; i < proInfoItems.length; i++) {
+        let subtotal = proInfoItems[i].price * proInfoItems[i].count;
+        let savedMoney = proInfoItems[i].price * (proInfoItems[i].count / 3);
+        if (proInfoItems[i].proType === 'BUY_TWO_GET_ONE_FREE') {
+            savedSubItems.push(Object.assign({}, proInfoItems[i], {savedSubtotal: (subtotal - savedMoney)}));
         }
         else {
-            savedSubtotalItems.push(Object.assign({},cartItems[j],{savedSubtotal:cartItems[j].price*cartItems[j].count}));
+            savedSubItems.push(Object.assign({}, proInfoItems[i], {savedSubtotal: subtotal}));
+
         }
     }
-
-
-    return savedSubtotalItems;
+    return savedSubItems;
 }
 
-// console.log(JSON.stringify(savedSubtotalItems, null, 4));
-
-function getTotal(subtotaledItems) {
-    let total = 0;
-    for (let i = 0; i < subtotaledItems.length; i++) {
-        total += subtotaledItems[i].subtotal;
-    }
-    return total;
-}
-
-function getSavedMoney(subtotaledItems, savedSubtotaledItems) {
+function print(savedSubItems) {
     let savedMoney = 0;
-    for (let i = 0; i < subtotaledItems.length; i++) {
-        savedMoney += (subtotaledItems[i].subtotal - savedSubtotaledItems[i].savedSubtotal);
+    let total = 0;
+    let text = '***<没钱赚商店>收据***\n';
+
+    for (let i = 0; i < savedSubItems.length; i++) {
+        text += "名称：" + savedSubItems[i].name + "，数量：" + savedSubItems[i].count + savedSubItems[i].unit + "，单价：" + savedSubItems[i].price.toFixed(2) + "(元)，小计：" + savedSubItems[i].savedSubtotal.toFixed(2) + "(元)\n";
+        total += savedSubItems[i].savedSubtotal;
+        savedMoney += savedSubItems[i].count * savedSubItems[i].price - savedSubItems[i].savedSubtotal;
     }
-    return savedMoney;
+    text += "----------------------\n" +
+        "总计：" + total.toFixed(2) + "(元)\n" +
+        "节省：" + savedMoney + "(元)\n" +
+        "**********************";
+    console.log(text);
 }
 
-function print(savedSubtotaledItems, total, savedMoney) {
-    console.log("***<没钱赚商店>收据***\n");
-    for (let i = 0; i < savedSubtotaledItems.length; i++) {
-        console.log(
-            "名称:" + savedSubtotaledItems[i].name +
-            ", 数量:" + savedSubtotaledItems[i].count + savedSubtotaledItems[i].unit +
-            ",单价:" + savedSubtotaledItems[i].price +
-            "（元）,小计：" + savedSubtotaledItems[i].savedSubtotal + "（元）\n"
-        );
-    }
-    console.log("----------------------\n");
-    console.log("总计: " + total + "（元）\n" + "节省: " + savedMoney + "（元）\n" + "**********************");
-}
+
+function printReceipt(tags) {
+    let allItems = loadAllItems();
+    let proInfo = loadPromotions();
+    let formatedTags = formatTags(tags);
+    let mergedBarcodes = mergeBarcodes(formatedTags);
+    let cartItems = getItems(mergedBarcodes, allItems);
+    let proInfoItems = getPromontionType(cartItems);
+    let savedSubItems = getSavedSubtotal(proInfoItems);
+    print(savedSubItems);
+}}
