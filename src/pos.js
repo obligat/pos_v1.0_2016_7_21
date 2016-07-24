@@ -100,19 +100,19 @@ function getItems(mergedBarcodes, allItems) {
 function getPromontionType(cartItems) {
     let proInfo = loadPromotions();
     let proInfoItems = [];
-    for (let i = 0; i < proInfo[0].barcodes.length; i++) {
-        for (let j = 0; j < cartItems.length; j++) {
-            if (cartItems[j].barcode === proInfo[0].barcodes[i]) {
-                proInfoItems.push(Object.assign({}, cartItems[j], {proType: "BUY_TWO_GET_ONE_FREE"}));
-            }
-            else {
-                proInfoItems.push(Object.assign({}, cartItems[j], {proType: "other"}));
-            }
+    var barcodes = proInfo[0].barcodes;
+
+    for (let i = 0; i < cartItems.length; i++) {
+        var bol = barcodes.find(function (barcode) {
+            return barcode === cartItems[i].barcode;
+        });
+        if (bol) {
+            proInfoItems.push(Object.assign({}, cartItems[i], {proType: "BUY_TWO_GET_ONE_FREE"}));
+        } else {
+            proInfoItems.push(Object.assign({}, cartItems[i], {proType: "other"}));
         }
-
-
-        return proInfoItems;
     }
+    return proInfoItems;
 }
 
 function getSavedSubtotal(proInfoItems) {
@@ -120,15 +120,17 @@ function getSavedSubtotal(proInfoItems) {
 
     for (let i = 0; i < proInfoItems.length; i++) {
         let subtotal = proInfoItems[i].price * proInfoItems[i].count;
-        let savedMoney = proInfoItems[i].price * (proInfoItems[i].count / 3);
+        let savedMoney = proInfoItems[i].price * parseInt(proInfoItems[i].count / 3);
         if (proInfoItems[i].proType === 'BUY_TWO_GET_ONE_FREE') {
-            savedSubItems.push(Object.assign({}, proInfoItems[i], {savedSubtotal: (subtotal - savedMoney)}));
+
+            savedSubItems.push(Object.assign({}, proInfoItems[i], {savedSubtotal: subtotal - savedMoney}));
         }
         else {
             savedSubItems.push(Object.assign({}, proInfoItems[i], {savedSubtotal: subtotal}));
 
         }
     }
+
     return savedSubItems;
 }
 
@@ -144,7 +146,7 @@ function print(savedSubItems) {
     }
     text += "----------------------\n" +
         "总计：" + total.toFixed(2) + "(元)\n" +
-        "节省：" + savedMoney + "(元)\n" +
+        "节省：" + savedMoney.toFixed(2) + "(元)\n" +
         "**********************";
     console.log(text);
 }
@@ -159,4 +161,4 @@ function printReceipt(tags) {
     let proInfoItems = getPromontionType(cartItems);
     let savedSubItems = getSavedSubtotal(proInfoItems);
     print(savedSubItems);
-}}
+}

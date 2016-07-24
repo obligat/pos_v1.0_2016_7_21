@@ -213,7 +213,7 @@ describe("print",function () {
 名称：苹果，数量：3斤，单价：5.50(元)，小计：16.50(元)
 ----------------------
 总计：22.50(元)
-节省：3(元)
+节省：3.00(元)
 **********************`;
         expect(console.log).toHaveBeenCalledWith(expectText);
     })
